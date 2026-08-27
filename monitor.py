@@ -32,8 +32,7 @@ def get_jobs():
 
     jobs = {}
 
-    # Research Park's WordPress job pages contain links to individual
-    # job_listing posts. Grab those URLs as unique identifiers.
+    # Find links that point to actual Research Park job pages
     for link in soup.find_all("a", href=True):
         href = link["href"]
         text = " ".join(link.stripped_strings).strip()
@@ -41,32 +40,17 @@ def get_jobs():
         if not text:
             continue
 
-        # Individual Research Park posts normally stay on the same domain.
-        if "researchpark.illinois.edu" in href:
-            full_url = urljoin(URL, href)
+        full_url = urljoin(URL, href)
 
-            # Ignore navigation / pagination / generic pages
-            ignored = [
-                "/work-here/",
-                "/companies/",
-                "/events/",
-                "/news/",
-                "/resources/",
-                "/about/",
-                "/job-dashboard/",
-                "/job-alerts/",
-                "/post-a-job/",
-            ]
+        # Only keep real individual job listing URLs
+        if not full_url.startswith(
+            "https://researchpark.illinois.edu/job/"
+        ):
+            continue
 
-            if any(x in full_url for x in ignored):
-                continue
-
-            # Job title links tend to be meaningful headings.
-            if len(text) >= 4 and len(text) <= 200:
-                parent = link.find_parent(["h1", "h2", "h3", "h4"])
-
-                if parent:
-                    jobs[full_url] = text
+        # Basic sanity check on the title text
+        if 4 <= len(text) <= 200:
+            jobs[full_url] = text
 
     return jobs
 
